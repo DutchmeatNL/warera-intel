@@ -7,30 +7,37 @@ async function getDetailedWarStats(countryId: string) {
   try {
     const input = JSON.stringify({ countryId });
     
-    // 1. Haal de lijst met User ID's van het land op
+    async function getDetailedWarStats(countryId: string) {
+  try {
+    const input = JSON.stringify({ countryId });
+  
     const usersRes = await fetch(`https://api2.warera.io/trpc/user.getUsersByCountry?input=${encodeURIComponent(input)}`, {
       headers: { 'Authorization': `Bearer ${API_KEY}` }
     });
     const usersJson = await usersRes.json();
-    const userIds: string[] = usersJson.result?.data || [];
+    
+    // DEBUG: Log de structuur als het weer misgaat
+    // console.log("Raw users data:", JSON.stringify(usersJson));
 
-    if (userIds.length === 0) {
-      return { name: "Onbekend", activePlayers: 0, totalPlayers: 0, activityPercent: 0 };
+    const userIds = usersJson.result?.data?.json || usersJson.result?.data || [];
+
+    if (!Array.isArray(userIds)) {
+      console.error(`UserIds voor ${countryId} is geen array maar:`, typeof userIds);
+      return { name: "Data Error", activePlayers: 0, totalPlayers: 0, activityPercent: 0 };
     }
 
-    // 2. Naam van het land ophalen
-    const countryRes = await fetch(`https://api2.warera.io/trpc/country.getCountryById?input=${encodeURIComponent(input)}`, {
-      headers: { 'Authorization': `Bearer ${API_KEY}` },
-      cache: 'force-cache'
-    });
-    const countryJson = await countryRes.json();
-    const countryName = countryJson.result?.data?.name || "Onbekend";
+    if (userIds.length === 0) {
+      const countryRes = await fetch(`https://api2.warera.io/trpc/country.getCountryById?input=${encodeURIComponent(input)}`, {
+        headers: { 'Authorization': `Bearer ${API_KEY}` },
+        cache: 'force-cache'
+      });
+      const cJson = await countryRes.json();
+      return { name: cJson.result?.data?.name || "Leeg land", activePlayers: 0, totalPlayers: 0, activityPercent: 0 };
+    }
 
-    // 3. Steekproef: Pak de eerste 10 spelers voor activiteitscheck
     const sampleIds = userIds.slice(0, 10);
     let activeCount = 0;
 
-    // We halen de details van de steekproef op
     await Promise.all(sampleIds.map(async (userId) => {
       try {
         const userInput = JSON.stringify({ userId });
