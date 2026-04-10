@@ -1,33 +1,47 @@
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  const NEDERLAND_ID = '6813b6d446e731854c7ac7a0'; // Check of dit een string is, bijv: '10'
+  const LAND_ID = '6813b6d446e731854c7ac7a0';
   const API_KEY = process.env.WARERA_API_KEY;
 
-  console.log("Systeem probeert verbinding te maken met ID:", NEDERLAND_ID);
-  console.log("API Key aanwezig?:", !!API_KEY);
+ 
+  const input = JSON.stringify({ id: LAND_ID });
+  const targetUrl = `https://api2.warera.io/trpc/country.getCountryById?batch=1&input=${encodeURIComponent(input)}`;
+
+  console.log("Poging tot tRPC call naar:", targetUrl);
 
   try {
-    const response = await fetch(`https://api.warero.io/country/getCountryById?countryId=${NEDERLAND_ID}`, {
-      headers: { 'Authorization': `Bearer ${API_KEY}` },
-      cache: 'no-store' // Zorgt dat we altijd verse data krijgen
+    const response = await fetch(targetUrl, {
+      headers: { 
+        'Authorization': `Bearer ${API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      cache: 'no-store'
     });
     
     if (!response.ok) {
-      console.error("WarEra API gaf een foutmelding:", response.status);
-      return NextResponse.json({ error: `WarEra API Error: ${response.status}` }, { status: response.status });
+      const errorText = await response.text();
+      console.error("WarEra tRPC Error:", response.status, errorText);
+      return NextResponse.json({ error: `Status ${response.status}` }, { status: response.status });
     }
 
-    const data = await response.json();
-    console.log("Data succesvol ontvangen voor:", data.name);
+    const jsonResponse = await response.json();
+    
+    const data = jsonResponse[0]?.result?.data || jsonResponse.result?.data;
 
-    // Als de velden 'allies' of 'enemies' niet bestaan, sturen we lege lijsten
+    if (!data) {
+      console.log("Geen data gevonden in tRPC response:", JSON.stringify(jsonResponse));
+      return NextResponse.json({ error: "Geen data in response" }, { status: 404 });
+    }
+
     return NextResponse.json({
+      name: data.name || "Nederland",
       allies: data.allies || [],
       enemies: data.warsWith || []
     });
+
   } catch (error: any) {
-    console.error("Critical Error in Route:", error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Fetch Error:", error.message);
+    return NextResponse.json({ error: "Verbinding mislukt", details: error.message }, { status: 500 });
   }
 }
