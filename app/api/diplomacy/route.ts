@@ -13,9 +13,14 @@ export async function POST() {
         'Authorization': `Bearer ${API_KEY}`,
         'Content-Type': 'application/json',
       },
-      
+      // We veranderen 'id' naar 'countryId' en plaatsen het in een 'json' object
+      // Dit is de standaard tRPC 10-stijl structuur
       body: JSON.stringify({
-        "0": { id: LAND_ID }
+        "0": { 
+          json: { 
+            countryId: LAND_ID 
+          } 
+        }
       }),
       cache: 'no-store'
     });
