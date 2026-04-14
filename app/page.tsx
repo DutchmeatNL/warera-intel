@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 
-export default function PowerDashboard() {
+export default function IntelligenceDashboard() {
   const [data, setData] = useState<any>(null);
 
   useEffect(() => {
@@ -9,119 +9,106 @@ export default function PowerDashboard() {
   }, []);
 
   if (!data) return (
-    <div className="flex items-center justify-center min-h-screen bg-black text-orange-500 font-mono animate-pulse">
-      SYNCING WITH GLOBAL RANKINGS...
+    <div className="flex items-center justify-center min-h-screen bg-[#0a0a0a] text-zinc-500 font-mono text-xs tracking-widest">
+      INITIALIZING SYSTEM...
     </div>
   );
 
+  // Sorteren op wealth (hoog naar laag)
+  const sortedEnemies = [...data.enemies].sort((a, b) => b.wealth - a.wealth);
+  const sortedAllies = [...data.allies].sort((a, b) => b.wealth - a.wealth);
+
   const formatMoney = (n: number) => new Intl.NumberFormat('en-US', { 
-    style: 'currency', 
-    currency: 'USD', 
-    maximumFractionDigits: 0 
+    style: 'currency', currency: 'USD', maximumFractionDigits: 0 
   }).format(n);
 
-  const getTierColor = (tier: string) => {
-    const t = tier.toLowerCase();
-    if (t.includes('master')) return 'text-purple-400 border-purple-400';
-    if (t.includes('diamond')) return 'text-blue-300 border-blue-300';
-    if (t.includes('gold')) return 'text-yellow-500 border-yellow-500';
-    return 'text-slate-400 border-slate-400';
-  };
+  // Berekeningen voor de Power Balance
+  const enemyTotal = sortedEnemies.reduce((acc, curr) => acc + curr.wealth, 0);
+  const allyTotal = sortedAllies.reduce((acc, curr) => acc + curr.wealth, 0) + data.netherlands.wealth;
+  const ratio = (allyTotal / (allyTotal + enemyTotal)) * 100;
 
   return (
-    <main className="min-h-screen bg-[#050505] text-slate-200 p-4 md:p-12 font-sans tracking-tight">
-      
-      {/* Top Bar: NL Status */}
-      <div className="max-w-6xl mx-auto mb-16 border-b border-white/10 pb-10">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-          <div>
-            <h1 className="text-6xl font-black text-white italic tracking-tighter">NETHERLANDS</h1>
-            <div className="flex gap-4 mt-2">
-              <span className={`px-2 py-1 border text-xs font-bold uppercase ${getTierColor(data.netherlands.tier)}`}>
-                {data.netherlands.tier} Tier
-              </span>
-              <span className="text-slate-500 text-xs font-mono uppercase self-center">
-                Global Rank: <span className="text-white">#{data.netherlands.rank}</span>
-              </span>
+    <main className="min-h-screen bg-[#0a0a0a] text-zinc-300 p-6 md:p-12 font-sans">
+      <div className="max-w-5xl mx-auto">
+        
+        {/* Header Sectie */}
+        <header className="mb-12">
+          <div className="flex justify-between items-end mb-4">
+            <div>
+              <h1 className="text-zinc-500 text-[10px] tracking-[0.4em] uppercase mb-2">Sovereign State</h1>
+              <h2 className="text-4xl font-light text-white tracking-tight">NETHERLANDS</h2>
+            </div>
+            <div className="text-right">
+              <span className="text-zinc-500 text-[10px] tracking-[0.4em] uppercase block mb-1">Total Assets</span>
+              <span className="text-2xl font-mono text-white">{formatMoney(data.netherlands.wealth)}</span>
             </div>
           </div>
-          <div className="text-left md:text-right">
-            <p className="text-5xl font-light text-emerald-400 font-mono tracking-tighter">
-              {formatMoney(data.netherlands.wealth)}
-            </p>
-            <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1">Total Sovereign Wealth</p>
-          </div>
-        </div>
-      </div>
 
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16">
-        
-        {/* Enemies Column */}
-        <section>
-          <div className="flex justify-between items-center mb-8 border-l-4 border-red-600 pl-4">
-            <h3 className="text-xl font-bold uppercase italic">Threat Assessment</h3>
-            <span className="text-red-600 text-xs font-mono">WARS: {data.enemies.length}</span>
+          {/* Power Balance Indicator */}
+          <div className="relative h-[2px] w-full bg-zinc-800 mt-8">
+            <div 
+              className="absolute h-full bg-blue-500 transition-all duration-1000" 
+              style={{ width: `${ratio}%` }}
+            />
           </div>
+          <div className="flex justify-between mt-2 text-[9px] font-mono uppercase tracking-widest text-zinc-600">
+            <span>Coalition Power: {ratio.toFixed(1)}%</span>
+            <span>Opponent Power: {(100 - ratio).toFixed(1)}%</span>
+          </div>
+        </header>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
           
-          <div className="space-y-8">
-            {data.enemies.map((enemy: any, i: number) => (
-              <div key={i} className="group relative">
-                <div className="flex justify-between items-end mb-2">
+          {/* Oorlogslanden (Gesorteerd) */}
+          <section>
+            <h3 className="text-white text-[10px] tracking-[0.3em] uppercase mb-8 pb-2 border-b border-zinc-800">
+              Hostile Economies <span className="text-red-900 ml-2">///</span>
+            </h3>
+            <div className="space-y-6">
+              {sortedEnemies.map((enemy: any, i: number) => (
+                <div key={i} className="group">
+                  <div className="flex justify-between items-end mb-1">
+                    <span className="text-sm font-medium text-zinc-400 group-hover:text-white transition-colors">
+                      {enemy.name} <span className="text-zinc-700 ml-2 font-mono text-[10px]">RANK #{enemy.rank}</span>
+                    </span>
+                    <span className="text-xs font-mono text-zinc-500">{formatMoney(enemy.wealth)}</span>
+                  </div>
+                  <div className="h-[1px] w-full bg-zinc-900">
+                    <div 
+                      className="h-full bg-red-900/40 transition-all duration-700" 
+                      style={{ width: `${Math.min((enemy.wealth / data.netherlands.wealth) * 100, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Bondgenoten (Gesorteerd) */}
+          <section>
+            <h3 className="text-white text-[10px] tracking-[0.3em] uppercase mb-8 pb-2 border-b border-zinc-800">
+              Allied Economies <span className="text-blue-900 ml-2">///</span>
+            </h3>
+            <div className="grid grid-cols-1 gap-3">
+              {sortedAllies.map((ally: any, i: number) => (
+                <div key={i} className="flex justify-between items-center p-3 border border-zinc-900 bg-zinc-900/20 hover:bg-zinc-900/40 transition-all">
                   <div>
-                    <span className="text-xs text-slate-500 font-mono block mb-1">RANK #{enemy.rank}</span>
-                    <h4 className="text-2xl font-bold uppercase">{enemy.name}</h4>
+                    <span className="text-[9px] font-mono text-zinc-600 block mb-0.5">#{ally.rank}</span>
+                    <span className="text-xs text-zinc-400 uppercase tracking-wider">{ally.name}</span>
                   </div>
-                  <div className="text-right">
-                    <span className="text-lg font-mono text-slate-300">{formatMoney(enemy.wealth)}</span>
-                  </div>
+                  <span className="text-xs font-mono text-blue-900">{formatMoney(ally.wealth)}</span>
                 </div>
-                {/* Visual Wealth Bar */}
-                <div className="h-1.5 bg-white/5 w-full rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-red-600 shadow-[0_0_10px_rgba(220,38,38,0.5)] transition-all duration-1000" 
-                    style={{ width: `${Math.min((enemy.wealth / data.netherlands.wealth) * 100, 100)}%` }}
-                  />
-                </div>
-                <div className="flex justify-between mt-2">
-                  <span className={`text-[10px] font-bold uppercase ${getTierColor(enemy.tier)}`}>
-                    {enemy.tier}
-                  </span>
-                  <span className="text-[10px] text-slate-600 uppercase font-mono">
-                    Power Ratio: {((enemy.wealth / data.netherlands.wealth) * 100).toFixed(1)}%
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+              ))}
+            </div>
+          </section>
 
-        {/* Allies Column */}
-        <section>
-          <div className="flex justify-between items-center mb-8 border-l-4 border-blue-600 pl-4">
-            <h3 className="text-xl font-bold uppercase italic">Allied Support</h3>
-            <span className="text-blue-500 text-xs font-mono">COALITION: {data.allies.length}</span>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {data.allies.map((ally: any, i: number) => (
-              <div key={i} className="p-4 bg-white/5 border border-white/10 hover:border-blue-500/50 transition-colors">
-                <div className="flex justify-between items-start mb-4">
-                  <span className="text-[10px] font-mono text-slate-500">#{ally.rank}</span>
-                  <span className={`text-[8px] border px-1 ${getTierColor(ally.tier)}`}>{ally.tier}</span>
-                </div>
-                <h4 className="font-bold uppercase truncate">{ally.name}</h4>
-                <p className="text-sm font-mono text-blue-400 mt-1">{formatMoney(ally.wealth)}</p>
-              </div>
-            ))}
-          </div>
-        </section>
+        </div>
 
+        <footer className="mt-20 pt-8 border-t border-zinc-900 flex justify-between items-center text-[9px] text-zinc-700 font-mono tracking-widest uppercase">
+          <span>Operational Intelligence v3.0</span>
+          <span className="animate-pulse">System Live</span>
+        </footer>
       </div>
-
-      <footer className="max-w-6xl mx-auto mt-24 pt-8 border-t border-white/5 flex justify-between text-[10px] text-slate-600 font-mono uppercase tracking-[0.3em]">
-        <span>Encrypted Connection Active</span>
-        <span>WarEra Global Index v2.1</span>
-      </footer>
     </main>
   );
 }
